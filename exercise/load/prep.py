@@ -2,15 +2,14 @@ import os
 import pickle
 import pandas as pd
 
-from sklearn.feature_extraction import DictVectorizer
 from prefect import flow, task
 
+from sklearn.feature_extraction import DictVectorizer
 
 @task
 def dump_pickle(obj, filename: str):
     with open(filename, "wb") as f_out:
         return pickle.dump(obj, f_out)
-
 
 @task
 def read_dataframe(filename: str):
@@ -18,6 +17,7 @@ def read_dataframe(filename: str):
 
     df['tpep_dropoff_datetime'] = pd.to_datetime(df['tpep_dropoff_datetime'])
     df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
+
     df['duration'] = df['tpep_dropoff_datetime'] - df['tpep_pickup_datetime']
     df.duration = df.duration.apply(lambda td: td.total_seconds() / 60)
     df = df[(df.duration >= 1) & (df.duration <= 60)]
@@ -41,16 +41,16 @@ def preprocess(df: pd.DataFrame, dv: DictVectorizer, fit_dv: bool = False):
 
 
 @flow
-def prep_flow(raw_data_path: str, dest_path: str):
+def prep_flow(data_path: str, dest_path: str):
     # Load parquet files
     df_train = read_dataframe(
-        os.path.join(raw_data_path, f"yellow-2021-01.csv")
+        os.path.join(data_path, "yellow-2021-01.csv")
     )
     df_val = read_dataframe(
-        os.path.join(raw_data_path, f"yellow-2021-02.csv")
+        os.path.join(data_path, "yellow-2021-02.csv")
     )
     df_test = read_dataframe(
-        os.path.join(raw_data_path, f"yellow-2021-03.csv")
+        os.path.join(data_path, "yellow-2021-03.csv")
     )
 
     # Extract the target

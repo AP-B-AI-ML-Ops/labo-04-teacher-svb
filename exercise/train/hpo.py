@@ -3,22 +3,19 @@ import pickle
 import mlflow
 import optuna
 
+from prefect import task, flow
+
 from optuna.samplers import TPESampler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-from prefect import flow, task
-
-HPO_EXPERIMENT_NAME = "random-forest-hyperopt"
-
 @task
-def load_pickle(filename: str):
+def load_pickle(filename):
     with open(filename, "rb") as f_in:
         return pickle.load(f_in)
 
 @task
 def optimize(X_train, y_train, X_val, y_val, num_trials):
-
     def objective(trial):
         params = {
             'n_estimators': trial.suggest_int('n_estimators', 10, 50, 1),
@@ -44,12 +41,12 @@ def optimize(X_train, y_train, X_val, y_val, num_trials):
 
 
 @flow
-def hpo_flow(data_path: str, num_trials: int):
-    mlflow.set_experiment(HPO_EXPERIMENT_NAME)
+def hpo_flow(model_path: str, num_trials: int, experiment_name: str):
+    mlflow.set_experiment(experiment_name)
 
     mlflow.sklearn.autolog(disable=True)
 
-    X_train, y_train = load_pickle(os.path.join(data_path, "train.pkl"))
-    X_val, y_val = load_pickle(os.path.join(data_path, "val.pkl"))
+    X_train, y_train = load_pickle(os.path.join(model_path, "train.pkl"))
+    X_val, y_val = load_pickle(os.path.join(model_path, "val.pkl"))
 
     optimize(X_train, y_train, X_val, y_val, num_trials)
